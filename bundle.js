@@ -1,9 +1,11 @@
 // index.ts
 var TEXT_URL = "https://raw.githubusercontent.com/ESWAT/john-carmack-plan-archive/refs/heads/master/by_year/johnc_plan_1996.txt";
+var navigator = window.navigator;
 var textContainer = document.getElementById("text-container");
 var urlDisplay = document.createElement("div");
 urlDisplay.style.position = "absolute";
-urlDisplay.style.bottom = "10px";
+urlDisplay.style.bottom = "110px";
+urlDisplay.style.top = "100px";
 urlDisplay.style.left = "10px";
 urlDisplay.style.color = "#A9A9A9";
 document.body.appendChild(urlDisplay);
@@ -45,6 +47,10 @@ function animate() {
 animate();
 async function initWebGPU() {
   const canvas = document.getElementById("gpu-canvas");
+  if (!canvas) {
+    console.error("Canvas element not found.");
+    return;
+  }
   if (!navigator.gpu) {
     console.error("WebGPU not available.");
     return;
@@ -56,12 +62,21 @@ async function initWebGPU() {
   }
   const device = await adapter.requestDevice();
   const context = canvas.getContext("webgpu");
+  if (!context) {
+    console.error("Failed to get WebGPU context.");
+    return;
+  }
   const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-  context.configure({
-    device,
-    format: canvasFormat,
-    alphaMode: "opaque"
-  });
+  try {
+    context.configure({
+      device,
+      format: canvasFormat,
+      alphaMode: "opaque"
+    });
+  } catch (error) {
+    console.error("Failed to configure WebGPU context:", error);
+    return;
+  }
   function frame() {
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
@@ -85,11 +100,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const content = document.getElementById("content");
   const gpuCanvas = document.getElementById("gpu-canvas");
   const gl = gpuCanvas.getContext("webgl");
+  fileSelector.style.display = "none";
+  urlDisplay.style.display = "none";
   fileSelector.addEventListener("change", () => {
     const selectedFile = fileSelector.value;
     const fileUrl = `https://raw.githubusercontent.com/ESWAT/john-carmack-plan-archive/refs/heads/master/by_year/${selectedFile}`;
     loadFile(fileUrl);
     reloadCanvas();
+    clearScreen();
   });
   function loadFile(fileUrl) {
     content.classList.add("fade-out");
@@ -125,6 +143,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
     drawSwipe();
+  }
+  function clearScreen() {
+    content.innerHTML = "";
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
   }
   loadFile(fileSelector.value);
   reloadCanvas();
