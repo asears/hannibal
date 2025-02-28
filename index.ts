@@ -1,14 +1,25 @@
 const TEXT_URL = 'https://raw.githubusercontent.com/ESWAT/john-carmack-plan-archive/refs/heads/master/by_year/johnc_plan_1996.txt';
 
 const textContainer = document.getElementById('text-container') as HTMLDivElement;
+const urlDisplay = document.createElement('div');
+urlDisplay.style.position = 'absolute';
+urlDisplay.style.bottom = '10px';
+urlDisplay.style.left = '10px';
+urlDisplay.style.color = '#A9A9A9';
+document.body.appendChild(urlDisplay);
 
 // Load text and insert it inside the container
-fetch(TEXT_URL)
-    .then(response => response.text())
-    .then(text => {
-        textContainer.textContent = text;
-    })
-    .catch(error => console.error('Error loading text:', error));
+function loadText(url: string) {
+    fetch(url)
+        .then(response => response.text())
+        .then(text => {
+            textContainer.textContent = text;
+            urlDisplay.textContent = `Loaded URL: ${url}`;
+        })
+        .catch(error => console.error('Error loading text:', error));
+}
+
+loadText(TEXT_URL);
 
 // Smooth scrolling variables
 let targetX = 0, targetY = 0;
@@ -77,3 +88,74 @@ async function initWebGPU() {
 }
 
 initWebGPU();
+
+document.addEventListener('DOMContentLoaded', () => {
+    const fileSelector = document.getElementById('fileSelector') as HTMLSelectElement;
+    const content = document.getElementById('content') as HTMLDivElement;
+    const gpuCanvas = document.getElementById('gpu-canvas') as HTMLCanvasElement;
+    const gl = gpuCanvas.getContext('webgl') as WebGLRenderingContext;
+
+    fileSelector.addEventListener('change', () => {
+        const selectedFile = fileSelector.value;
+        const fileUrl = `https://raw.githubusercontent.com/ESWAT/john-carmack-plan-archive/refs/heads/master/by_year/${selectedFile}`;
+        loadFile(fileUrl);
+        reloadCanvas();
+    });
+
+    function loadFile(fileUrl: string) {
+        content.classList.add('fade-out');
+        fetch(fileUrl)
+            .then(response => response.text())
+            .then(data => {
+                setTimeout(() => {
+                    // Clear the canvas
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT);
+
+                    // Insert line breaks for each * and + character
+                    data = data.replace(/(\*|\+)/g, '$1<br>');
+
+                    // Break after each header containing --- characters
+                    data = data.replace(/---/g, '---<br>');
+
+                    content.innerHTML = data;
+                    content.classList.remove('fade-out');
+                    content.classList.add('fade-in');
+                    urlDisplay.textContent = `Loaded URL: ${fileUrl}`;
+                }, 1000); // Wait for the fade-out effect to complete
+            })
+            .catch(error => console.error('Error loading file:', error));
+    }
+
+    function reloadCanvas() {
+        // Clear the canvas
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // Create a screen swipe effect
+        const swipeWidth = gpuCanvas.width / 10;
+        let swipePosition = 0;
+
+        function drawSwipe() {
+            gl.clearColor(0.5, 0.5, 0.5, 1.0); // Grey foreground
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.enable(gl.SCISSOR_TEST);
+            gl.scissor(swipePosition, 0, swipeWidth, gpuCanvas.height);
+            gl.clearColor(0.0, 0.0, 0.0, 1.0); // Black background
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.disable(gl.SCISSOR_TEST);
+
+            swipePosition += swipeWidth;
+            if (swipePosition < gpuCanvas.width) {
+                requestAnimationFrame(drawSwipe);
+            }
+        }
+
+        drawSwipe();
+    }
+
+    // Load the initial file
+    loadFile(fileSelector.value);
+    reloadCanvas();
+});

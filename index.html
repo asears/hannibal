@@ -2,13 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Doom-Style Text Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Selector</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <canvas id="gpu-canvas"></canvas>
   <div id="text-container"></div>
-  <!-- Reference the bundled JavaScript instead of index.ts -->
+  <div id="menu">
+    <label for="fileSelector">Select a file:</label>
+    <select id="fileSelector" title="File Selector">
+      <option value="johnc_plan_1996.txt">1996</option>
+      <option value="johnc_plan_1997.txt">1997</option>
+      <option value="johnc_plan_1998.txt">1998</option>
+      <option value="johnc_plan_1999.txt">1999</option>
+      <option value="johnc_plan_2000.txt">2000</option>
+      <option value="johnc_plan_2001.txt">2001</option>
+      <option value="johnc_plan_2002.txt">2002</option>
+    </select>
+  </div>
+  <div id="content"></div>
   <script type="module" src="./bundle.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

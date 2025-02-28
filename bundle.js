@@ -1,9 +1,19 @@
 // index.ts
 var TEXT_URL = "https://raw.githubusercontent.com/ESWAT/john-carmack-plan-archive/refs/heads/master/by_year/johnc_plan_1996.txt";
 var textContainer = document.getElementById("text-container");
-fetch(TEXT_URL).then((response) => response.text()).then((text) => {
-  textContainer.textContent = text;
-}).catch((error) => console.error("Error loading text:", error));
+var urlDisplay = document.createElement("div");
+urlDisplay.style.position = "absolute";
+urlDisplay.style.bottom = "10px";
+urlDisplay.style.left = "10px";
+urlDisplay.style.color = "#A9A9A9";
+document.body.appendChild(urlDisplay);
+function loadText(url) {
+  fetch(url).then((response) => response.text()).then((text) => {
+    textContainer.textContent = text;
+    urlDisplay.textContent = `Loaded URL: ${url}`;
+  }).catch((error) => console.error("Error loading text:", error));
+}
+loadText(TEXT_URL);
 var targetX = 0;
 var targetY = 0;
 var currentX = 0;
@@ -70,3 +80,52 @@ async function initWebGPU() {
   requestAnimationFrame(frame);
 }
 initWebGPU();
+document.addEventListener("DOMContentLoaded", () => {
+  const fileSelector = document.getElementById("fileSelector");
+  const content = document.getElementById("content");
+  const gpuCanvas = document.getElementById("gpu-canvas");
+  const gl = gpuCanvas.getContext("webgl");
+  fileSelector.addEventListener("change", () => {
+    const selectedFile = fileSelector.value;
+    const fileUrl = `https://raw.githubusercontent.com/ESWAT/john-carmack-plan-archive/refs/heads/master/by_year/${selectedFile}`;
+    loadFile(fileUrl);
+    reloadCanvas();
+  });
+  function loadFile(fileUrl) {
+    content.classList.add("fade-out");
+    fetch(fileUrl).then((response) => response.text()).then((data) => {
+      setTimeout(() => {
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        data = data.replace(/(\*|\+)/g, "$1<br>");
+        data = data.replace(/---/g, "---<br>");
+        content.innerHTML = data;
+        content.classList.remove("fade-out");
+        content.classList.add("fade-in");
+        urlDisplay.textContent = `Loaded URL: ${fileUrl}`;
+      }, 1000);
+    }).catch((error) => console.error("Error loading file:", error));
+  }
+  function reloadCanvas() {
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    const swipeWidth = gpuCanvas.width / 10;
+    let swipePosition = 0;
+    function drawSwipe() {
+      gl.clearColor(0.5, 0.5, 0.5, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.enable(gl.SCISSOR_TEST);
+      gl.scissor(swipePosition, 0, swipeWidth, gpuCanvas.height);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.disable(gl.SCISSOR_TEST);
+      swipePosition += swipeWidth;
+      if (swipePosition < gpuCanvas.width) {
+        requestAnimationFrame(drawSwipe);
+      }
+    }
+    drawSwipe();
+  }
+  loadFile(fileSelector.value);
+  reloadCanvas();
+});
